@@ -29,6 +29,12 @@ public class UserService {
                 .orElseThrow();
     }
 
+    public void deactivate(Long id) {
+        User user = findUserById(id);
+        user.setActive(false);
+        userRepository.save(user);
+    }
+
 
     private UserResponse toResponse(User u) {
         return UserResponse.builder()
