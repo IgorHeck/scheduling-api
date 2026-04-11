@@ -1,13 +1,20 @@
-FROM eclipse-temurin:21-jdk-alpine AS build
-WORKDIR /app
-COPY mvnw pom.xml ./
-COPY .mvn .mvn
-RUN ./mvnw dependency:go-offline -q
-COPY src ./src
-RUN ./mvnw package -DskipTests -q
+# ===== BUILD =====
+FROM maven:3.9-eclipse-temurin-21 AS build
 
-FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+
+COPY pom.xml ./
+RUN mvn dependency:go-offline -q
+
+COPY src ./src
+RUN mvn package -DskipTests -q
+
+
+# ===== RUN =====
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
