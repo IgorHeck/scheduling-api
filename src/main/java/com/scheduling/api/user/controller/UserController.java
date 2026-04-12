@@ -31,7 +31,7 @@ public class UserController {
 
     @PutMapping("/me")
     @Operation(summary = "Atualiza dados do proprio perfil")
-    public ResponseEntity<UserResponse> updateMe (@AuthenticationPrincipal UserDetails principal,
+    public ResponseEntity<UserResponse> updateMe(@AuthenticationPrincipal UserDetails principal,
                                                   @RequestBody @Valid UpdateUserRequest req) {
         return ResponseEntity.ok(null);
     }
