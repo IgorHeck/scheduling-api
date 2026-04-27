@@ -3,6 +3,7 @@ package com.scheduling.api.company.service;
 import com.scheduling.api.company.dto.*;
 import com.scheduling.api.company.model.Company;
 import com.scheduling.api.company.repository.CompanyRepository;
+import com.scheduling.api.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -50,7 +51,8 @@ public class CompanyService {
     }
 
     public Company findCompanyById(Long id) {
-        return companyRepository.findById(id).orElse(null);
+        return companyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada: " + id));
     }
 
     private CompanyResponse toResponse(Company c) {

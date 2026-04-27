@@ -1,5 +1,6 @@
 package com.scheduling.api.user.service;
 
+import com.scheduling.api.exception.ResourceNotFoundException;
 import com.scheduling.api.user.dto.UserResponse;
 import com.scheduling.api.user.model.User;
 import com.scheduling.api.user.repository.UserRepository;
@@ -26,7 +27,7 @@ public class UserService {
 
     public User findUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado: " + id));
     }
 
     public void deactivate(Long id) {
@@ -34,7 +35,6 @@ public class UserService {
         user.setActive(false);
         userRepository.save(user);
     }
-
 
     private UserResponse toResponse(User u) {
         return UserResponse.builder()

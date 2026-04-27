@@ -9,6 +9,8 @@ import com.scheduling.api.appointment.model.AppointmentStatus;
 import com.scheduling.api.appointment.repository.AppointmentRepository;
 import com.scheduling.api.company.model.Company;
 import com.scheduling.api.company.service.CompanyService;
+import com.scheduling.api.exception.BusinessException;
+import com.scheduling.api.exception.ResourceNotFoundException;
 import com.scheduling.api.user.model.Role;
 import com.scheduling.api.user.model.User;
 import com.scheduling.api.user.service.UserService;
@@ -34,13 +36,13 @@ public class AppointmentService {
         Company company = companyService.findCompanyById(req.getCompanyId());
 
         if(!company.isAllowClienteBooking() && currentUser.getRole() == Role.CLIENT) {
-            throw null;
+            throw new BusinessException("Agendamentos públicos estão desativados para esta empresa.");
         }
 
         List<Appointment> conflicts = appointmentRepository
                 .findConflics(req.getProfessionalId(), req.getStartAt(), req.getEndAt());
         if(conflicts.isEmpty()) {
-            throw null;
+            throw new BusinessException("Horário indisponível. Por favor escolha outro slot.");
         }
 
         User professional = userService.findUserById(req.getProfessionalId());
@@ -87,7 +89,7 @@ public class AppointmentService {
     public AppointmentResponse confirm(Long id) {
         Appointment a = findAppointmentById(id);
         if (a.getStatus() != AppointmentStatus.PENDING) {
-            throw null;
+            throw new BusinessException("Apenas agendamentos PENDENTES podem ser confirmados.");
         }
         a.setStatus(AppointmentStatus.CONFIRMED);
         return toResponse(appointmentRepository.save(a));
@@ -97,7 +99,7 @@ public class AppointmentService {
     public AppointmentResponse cancel(Long id, String reason) {
         Appointment a = findAppointmentById(id);
         if (a.getStatus() == AppointmentStatus.COMPLETED) {
-            throw null;
+            throw new BusinessException("Agendamentos concluídos não podem ser cancelados.");
         }
         a.setStatus(AppointmentStatus.CANCELLED);
         a.setCancelReason(reason);
@@ -110,7 +112,7 @@ public class AppointmentService {
         List<Appointment> conflicts = appointmentRepository
                 .findConflics(a.getProfessional().getId(),req.getNewStartAt(),req.getNewEndAt());
         if(conflicts.isEmpty()) {
-            throw null;
+            throw new BusinessException("Novo horário indisponível.");
         }
         a.setStartAt(req.getNewStartAt());
         a.setEndAt(req.getNewEndAt());
@@ -131,7 +133,7 @@ public class AppointmentService {
 
     private Appointment findAppointmentById(Long id) {
         return appointmentRepository.findById(id)
-                .orElse(null);
+                .orElseThrow(() -> new ResourceNotFoundException("Agendamento não encontrado: " + id));
     }
 
     private AppointmentResponse toResponse(Appointment a) {

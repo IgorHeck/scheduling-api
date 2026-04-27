@@ -6,6 +6,7 @@ import com.scheduling.api.auth.dto.RegisterRequest;
 import com.scheduling.api.auth.dto.TokenResponse;
 import com.scheduling.api.auth.model.RefreshToken;
 import com.scheduling.api.auth.repository.RefreshTokenRepository;
+import com.scheduling.api.exception.BusinessException;
 import com.scheduling.api.user.model.Role;
 import com.scheduling.api.user.model.User;
 import com.scheduling.api.user.repository.UserRepository;
@@ -37,7 +38,7 @@ public class AuthService {
     @Transactional
     public TokenResponse register(RegisterRequest req) {
         if(userRepository.existsByEmail(req.getEmail())) {
-            throw new UsernameNotFoundException("Email já cadastrado");
+            throw new BusinessException("Email já cadastrado");
         }
         User user =User.builder()
                 .name(req.getName())
@@ -57,7 +58,7 @@ public class AuthService {
             new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
         );
         User user= userRepository.findByEmail(req.getEmail())
-                .orElseThrow();
+                .orElseThrow(() -> new BusinessException("Credenciais inválidas"));
         return  buildTokenResponse(user);
     }
 
@@ -66,7 +67,7 @@ public class AuthService {
         RefreshToken token =refreshTokenRepository.findByToken(req.getRefreshToken())
                 .orElseThrow();
         if (token.isRevoked() || token.getExpiresAt().isBefore(Instant.now())){
-            throw new UsernameNotFoundException("Refresh token já regogado");
+            throw new BusinessException("Refresh token expirado ou revogado");
         }
         token.setRevoked(true);
         refreshTokenRepository.save(token);
