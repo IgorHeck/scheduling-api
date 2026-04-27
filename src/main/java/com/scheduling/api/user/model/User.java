@@ -1,5 +1,6 @@
 package com.scheduling.api.user.model;
 
+import com.scheduling.api.company.model.Company;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -37,6 +38,10 @@ public class User {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

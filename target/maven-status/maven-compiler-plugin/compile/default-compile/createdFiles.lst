@@ -1,0 +1,10 @@
+com\scheduling\api\scheduling\dto\ScheduleRequest.class
+com\scheduling\api\user\dto\UpdateUserRequest.class
+com\scheduling\api\scheduling\service\AvaliabilityService.class
+com\scheduling\api\user\dto\CreateUserRequest.class
+com\scheduling\api\scheduling\dto\AvailableSlotResponse$AvailableSlotResponseBuilder.class
+com\scheduling\api\scheduling\model\ScheduleBlock.class
+com\scheduling\api\scheduling\dto\ScheduleBlockRequest.class
+com\scheduling\api\scheduling\repository\ScheduleBlockRepository.class
+com\scheduling\api\scheduling\model\ScheduleBlock$ScheduleBlockBuilder.class
+com\scheduling\api\scheduling\dto\AvailableSlotResponse.class
