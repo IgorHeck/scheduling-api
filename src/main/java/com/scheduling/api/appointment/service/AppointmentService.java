@@ -41,11 +41,14 @@ public class AppointmentService {
 
         List<Appointment> conflicts = appointmentRepository
                 .findConflics(req.getProfessionalId(), req.getStartAt(), req.getEndAt());
-        if(conflicts.isEmpty()) {
+        if(!conflicts.isEmpty()) {
             throw new BusinessException("Horário indisponível. Por favor escolha outro slot.");
         }
 
         User professional = userService.findUserById(req.getProfessionalId());
+        User client = (req.getClientId() != null)
+                ? userService.findUserById(req.getClientId())
+                : currentUser;
 
         AppointmentStatus status = (currentUser.getRole() == Role.ADMIN
                 || currentUser.getRole() == Role.MANAGER)
@@ -54,7 +57,7 @@ public class AppointmentService {
 
         Appointment a = Appointment.builder()
                 .company(company)
-                .client(currentUser)
+                .client(client)
                 .professional(professional)
                 .startAt(req.getStartAt())
                 .endAt(req.getEndAt())
@@ -111,7 +114,7 @@ public class AppointmentService {
         Appointment a = findAppointmentById(id);
         List<Appointment> conflicts = appointmentRepository
                 .findConflics(a.getProfessional().getId(),req.getNewStartAt(),req.getNewEndAt());
-        if(conflicts.isEmpty()) {
+        if(!conflicts.isEmpty()) {
             throw new BusinessException("Novo horário indisponível.");
         }
         a.setStartAt(req.getNewStartAt());

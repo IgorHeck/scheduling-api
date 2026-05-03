@@ -42,7 +42,7 @@ public class CompanyController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @Operation(summary = "Atualiza dados da empresa")
     public ResponseEntity<CompanyResponse> update(@PathVariable Long id,
                                                   @RequestBody @Valid CompanyRequest req) {
@@ -50,7 +50,7 @@ public class CompanyController {
     }
 
     @PutMapping("/{id}/settings")
-    @PreAuthorize("hasRole('ADMIN','MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @Operation(summary = "Altera configurações: Ativar/desativar agendamento publico, suspender empresa")
     public ResponseEntity<CompanyResponse> updateSettings(@PathVariable Long id,
                                                           @RequestBody @Valid CompanySettingsRequest req) {

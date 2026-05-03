@@ -2,6 +2,7 @@ package com.scheduling.api.user.controller;
 
 import com.scheduling.api.user.dto.UpdateUserRequest;
 import com.scheduling.api.user.dto.UserResponse;
+import com.scheduling.api.user.repository.UserRepository;
 import com.scheduling.api.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,23 +23,30 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @GetMapping("/me")
     @Operation(summary = "Retorna o perfil do usuário logado")
     public ResponseEntity<UserResponse> me(@AuthenticationPrincipal UserDetails principal) {
-        return ResponseEntity.ok(null);
+        // o Spring injeta o UserDetails com o email (username) extraído do JWT
+        return userRepository.findByEmail(principal.getUsername())
+                .map(u -> ResponseEntity.ok(userService.findById(u.getId())))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/me")
-    @Operation(summary = "Atualiza dados do proprio perfil")
-    public ResponseEntity<UserResponse> updateMe(@AuthenticationPrincipal UserDetails principal,
-                                                  @RequestBody @Valid UpdateUserRequest req) {
-        return ResponseEntity.ok(null);
+    @Operation(summary = "Atualiza dados do próprio perfil")
+    public ResponseEntity<UserResponse> updateMe(
+            @AuthenticationPrincipal UserDetails principal,
+            @RequestBody @Valid UpdateUserRequest req) {
+        return userRepository.findByEmail(principal.getUsername())
+                .map(u -> ResponseEntity.ok(userService.update(u.getId(), req)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Lista todos os usuários (somente Admin)")
+    @Operation(summary = "Lista todos os usuários (somente ADMIN)")
     public ResponseEntity<List<UserResponse>> findAll() {
         return ResponseEntity.ok(userService.findAll());
     }
@@ -50,10 +58,10 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Desativa usuário")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Desativa usuário (soft delete)")
     public ResponseEntity<Void> deactivate(@PathVariable Long id) {
         userService.deactivate(id);
         return ResponseEntity.noContent().build();
     }
-
 }
