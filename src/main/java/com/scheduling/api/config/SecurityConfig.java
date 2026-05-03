@@ -19,6 +19,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -29,17 +35,15 @@ public class SecurityConfig {
     private final TokenService tokenService;
     private final UserRepository userRepository;
 
-    // 🔐 Filtro JWT como BEAN (quebra o ciclo)
     @Bean
     public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService) {
         return new JwtAuthFilter(tokenService, userDetailsService);
     }
 
-    // 🔐 Cadeia de segurança
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <- linha que faltava
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -60,28 +64,47 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 🔐 Busca usuário no banco
     @Bean
     public UserDetailsService userDetailsService() {
-        return email -> userRepository.findByEmail(email)
-                .map(u -> User.withUsername(u.getEmail())
-                        .password(u.getPassword())
-                        .roles(u.getRole().name())
-                        .build())
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("Usuário não encontrado: " + email)
-                );
+        return email -> {
+            return userRepository.findByEmail(email)
+                    .map(u -> {
+                        return User.withUsername(u.getEmail())
+                                .password(u.getPassword())
+                                .roles(u.getRole().name())
+                                .build();
+                    })
+                    .orElseThrow(() ->
+                            new UsernameNotFoundException("Usuário não encontrado: " + email)
+                    );
+        };
     }
 
-    // 🔐 Encoder de senha
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 🔐 AuthenticationManager (login)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config); // <- mudei de /api/** para /** para cobrir tudo
+        return source;
+    }
+
+    @Bean  // <- adiciona esse aqui
+    public CorsFilter corsFilter() {
+        return new CorsFilter(corsConfigurationSource());
     }
 }
