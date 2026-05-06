@@ -1,9 +1,6 @@
 package com.scheduling.api.appointment.service;
 
-import com.scheduling.api.appointment.dto.AppointmentResponse;
-import com.scheduling.api.appointment.dto.CalendarDayResponse;
-import com.scheduling.api.appointment.dto.CreateAppointmentRequest;
-import com.scheduling.api.appointment.dto.RescheduleRequest;
+import com.scheduling.api.appointment.dto.*;
 import com.scheduling.api.appointment.model.Appointment;
 import com.scheduling.api.appointment.model.AppointmentStatus;
 import com.scheduling.api.appointment.repository.AppointmentRepository;
@@ -13,9 +10,11 @@ import com.scheduling.api.exception.BusinessException;
 import com.scheduling.api.exception.ResourceNotFoundException;
 import com.scheduling.api.user.model.Role;
 import com.scheduling.api.user.model.User;
+import com.scheduling.api.user.repository.UserRepository;
 import com.scheduling.api.user.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,6 +29,8 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final CompanyService companyService;
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public AppointmentResponse create(CreateAppointmentRequest req, User currentUser) {
@@ -64,6 +65,50 @@ public class AppointmentService {
                 .status(status)
                 .notes(req.getNotes())
                 .build();
+        return toResponse(appointmentRepository.save(a));
+    }
+
+    @Transactional
+    public AppointmentResponse createPublic(PublicAppointmentRequest req) {
+        Company company = companyService.findCompanyById(req.getCompanyId());
+
+        if (!company.isAllowClienteBooking()) {
+            throw new BusinessException("Esta empresa não está aceitando agendamentos no momento.");
+        }
+
+        List<Appointment> conflicts = appointmentRepository
+                .findConflics(req.getProfessionalId(), req.getStartAt(), req.getEndAt());
+        if (!conflicts.isEmpty()) {
+            throw new BusinessException("Horário indisponível. Por favor escolha outro slot.");
+        }
+
+        User client = userRepository.findByEmail(req.getClientEmail())
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .name(req.getClientName())
+                            .email(req.getClientEmail())
+                            .phone(req.getClientPhone())
+                            .password(passwordEncoder.encode(
+                                    java.util.UUID.randomUUID().toString()
+                            ))
+                            .role(Role.CLIENT)
+                            .active(true)
+                            .build();
+                    return userRepository.save(newUser);
+                });
+
+        User professional = userService.findUserById(req.getProfessionalId());
+
+        Appointment a = Appointment.builder()
+                .company(company)
+                .client(client)
+                .professional(professional)
+                .startAt(req.getStartAt())
+                .endAt(req.getEndAt())
+                .status(AppointmentStatus.PENDING)
+                .notes(req.getNotes())
+                .build();
+
         return toResponse(appointmentRepository.save(a));
     }
 

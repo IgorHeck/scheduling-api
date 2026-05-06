@@ -1,9 +1,6 @@
 package com.scheduling.api.appointment.controller;
 
-import com.scheduling.api.appointment.dto.AppointmentResponse;
-import com.scheduling.api.appointment.dto.CalendarDayResponse;
-import com.scheduling.api.appointment.dto.CreateAppointmentRequest;
-import com.scheduling.api.appointment.dto.RescheduleRequest;
+import com.scheduling.api.appointment.dto.*;
 import com.scheduling.api.appointment.service.AppointmentService;
 import com.scheduling.api.user.model.User;
 import com.scheduling.api.user.repository.UserRepository;
@@ -39,6 +36,13 @@ public class AppointmentController {
         User currentUser = userRepository.findByEmail(principal.getUsername())
                 .orElseThrow();
         return ResponseEntity.ok(appointmentService.create(req, currentUser));
+    }
+
+    @PostMapping("/public")
+    @Operation(summary = "Solicitação pública de agendamento — sem autenticação")
+    public ResponseEntity<AppointmentResponse> createPublic(
+            @RequestBody @Valid PublicAppointmentRequest req) {
+        return ResponseEntity.ok(appointmentService.createPublic(req));
     }
 
     @GetMapping
