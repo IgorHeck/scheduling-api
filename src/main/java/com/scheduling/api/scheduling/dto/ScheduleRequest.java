@@ -3,7 +3,6 @@ package com.scheduling.api.scheduling.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
@@ -14,5 +13,7 @@ public class ScheduleRequest {
     @NotNull private DayOfWeek dayOfWeek;
     @NotNull private LocalTime startTime;
     @NotNull private LocalTime endTime;
-    @Min(15)  private int slotDurationMinutes = 60;
+    private LocalTime lunchStart;
+    private LocalTime lunchEnd;
+    @Min(15) private int slotDurationMinutes = 60;
 }

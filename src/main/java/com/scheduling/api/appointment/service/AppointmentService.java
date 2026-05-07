@@ -8,6 +8,8 @@ import com.scheduling.api.company.model.Company;
 import com.scheduling.api.company.service.CompanyService;
 import com.scheduling.api.exception.BusinessException;
 import com.scheduling.api.exception.ResourceNotFoundException;
+import com.scheduling.api.scheduling.repository.ScheduleRepository;
+import com.scheduling.api.scheduling.service.AvaliabilityService;
 import com.scheduling.api.user.model.Role;
 import com.scheduling.api.user.model.User;
 import com.scheduling.api.user.repository.UserRepository;
@@ -17,9 +19,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -31,6 +36,8 @@ public class AppointmentService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AvaliabilityService avaliabilityService;
+    private final ScheduleRepository scheduleRepository;
 
     @Transactional
     public AppointmentResponse create(CreateAppointmentRequest req, User currentUser) {
@@ -170,13 +177,49 @@ public class AppointmentService {
 
     public List<CalendarDayResponse> getCalendarMonth(Long companyId, YearMonth month) {
         LocalDateTime start = month.atDay(1).atStartOfDay();
-        LocalDateTime end = month.atEndOfMonth().atTime(23,59);
+        LocalDateTime end   = month.atEndOfMonth().atTime(23, 59);
+
         List<Object[]> rows = appointmentRepository.countByDayInMonth(companyId, start, end);
-        return rows.stream().map(r -> CalendarDayResponse.builder()
-                .date(((java.sql.Date) r[0]).toLocalDate())
-                .totalAppointments((Long) r[1])
-                .status("partial")
-                .build()).toList();
+        Map<LocalDate, Long> appointmentsByDay = rows.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        r -> ((java.sql.Date) r[0]).toLocalDate(),
+                        r -> (Long) r[1]
+                ));
+
+        List<CalendarDayResponse> result = new ArrayList<>();
+        int daysInMonth = month.lengthOfMonth();
+
+        for (int day = 1; day <= daysInMonth; day++) {
+            java.time.LocalDate date = month.atDay(day);
+
+            if (date.isBefore(java.time.LocalDate.now())) continue;
+
+            List<com.scheduling.api.scheduling.dto.AvailableSlotResponse> slots =
+                    avaliabilityService.getAvailableSlots(companyId, date);
+
+            if (slots.isEmpty()) continue;
+
+            long totalSlots        = slots.size();
+            long availableSlots    = slots.stream().filter(s -> s.isAvailable()).count();
+            long totalAppointments = appointmentsByDay.getOrDefault(date, 0L);
+
+            String status;
+            if (availableSlots == 0) {
+                status = "full";
+            } else if (totalAppointments == 0) {
+                status = "available";
+            } else {
+                status = "partial";
+            }
+
+            result.add(CalendarDayResponse.builder()
+                    .date(date)
+                    .totalAppointments(totalAppointments)
+                    .status(status)
+                    .build());
+        }
+
+        return result;
     }
 
     private Appointment findAppointmentById(Long id) {

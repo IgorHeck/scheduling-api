@@ -35,9 +35,24 @@ public class ScheduleService {
                 .dayOfWeek(req.getDayOfWeek())
                 .startTime(req.getStartTime())
                 .endTime(req.getEndTime())
+                .lunchStart(req.getLunchStart())
+                .lunchEnd(req.getLunchEnd())
                 .slotDurationMinutes(req.getSlotDurationMinutes())
                 .active(true)
                 .build();
+
+        return scheduleRepository.save(schedule);
+    }
+
+    public Schedule update(Long id, ScheduleRequest req) {
+        Schedule schedule = scheduleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Grade não encontrada: " + id));
+
+        schedule.setStartTime(req.getStartTime());
+        schedule.setEndTime(req.getEndTime());
+        schedule.setLunchStart(req.getLunchStart());
+        schedule.setLunchEnd(req.getLunchEnd());
+        schedule.setSlotDurationMinutes(req.getSlotDurationMinutes());
 
         return scheduleRepository.save(schedule);
     }

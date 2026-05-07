@@ -53,6 +53,14 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.create(req));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(summary = "Edita uma grade de horários")
+    public ResponseEntity<Schedule> update(@PathVariable Long id,
+                                           @RequestBody @Valid ScheduleRequest req) {
+        return ResponseEntity.ok(scheduleService.update(id, req));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @Operation(summary = "Remove uma grade de horários")

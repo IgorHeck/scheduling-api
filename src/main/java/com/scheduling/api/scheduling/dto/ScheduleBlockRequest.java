@@ -1,10 +1,8 @@
 package com.scheduling.api.scheduling.dto;
 
-import com.scheduling.api.scheduling.model.ScheduleBlock;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Data
 public class ScheduleBlockRequest {
@@ -13,10 +11,10 @@ public class ScheduleBlockRequest {
     private Long companyId;
 
     @NotNull
-    private LocalTime startAt;
+    private LocalDateTime startAt;
 
     @NotNull
-    private LocalTime endAt;
+    private LocalDateTime endAt;
 
     private String reason;
 }
