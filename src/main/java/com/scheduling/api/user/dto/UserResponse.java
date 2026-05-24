@@ -15,5 +15,7 @@ public class UserResponse {
     private String phone;
     private Role role;
     private boolean active;
+    private Long companyId;
+    private String companyName;
     private LocalDateTime createdAt;
 }

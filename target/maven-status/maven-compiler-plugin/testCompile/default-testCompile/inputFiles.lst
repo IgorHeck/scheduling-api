@@ -1,0 +1,11 @@
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\appointment\controller\AppointmentControllerTest.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\appointment\service\AppointmentServiceTest.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\auth\controller\AuthControllerTest.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\auth\filter\JwtAuthFilterTest.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\auth\service\PasswordResetServiceTest.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\integration\AppointmentFlowIT.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\integration\AuthFlowIT.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\integration\BaseIntegrationTest.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\integration\RateLimitIT.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\notification\NotificationControllerTest.java
+C:\Users\Usuario\Documents\Projetos\scheduling\scheduling-api\src\test\java\com\scheduling\api\notification\NotificationServiceTest.java

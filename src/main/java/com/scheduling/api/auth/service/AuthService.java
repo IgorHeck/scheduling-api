@@ -31,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Value("${app.jwt.refresh-expiration-ms}")
     private long refreshExpirarionMs;
@@ -75,9 +76,15 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(String email) {
+    public void logout(String email, String rawToken) {
+        // Revoga todos os refresh tokens do usuário
         userRepository.findByEmail(email)
                 .ifPresent(refreshTokenRepository::deleteByUser);
+        // Adiciona o access token atual à blacklist para invalidação imediata
+        if (rawToken != null) {
+            long ttl = tokenService.getRemainingValiditySeconds(rawToken);
+            tokenBlacklistService.blacklist(rawToken, ttl);
+        }
     }
 
     private TokenResponse buildTokenResponse(User user) {

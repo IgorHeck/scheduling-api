@@ -31,6 +31,9 @@ public class Company {
 
     private String phone;
 
+    @Column(length = 500)
+    private String logoUrl;
+
     @Column(nullable = false)
     private boolean allowClienteBooking = true;
 

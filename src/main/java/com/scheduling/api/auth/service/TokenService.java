@@ -39,6 +39,20 @@ public class TokenService {
         catch (JwtException | IllegalArgumentException e) {return false;}
     }
 
+    /**
+     * Retorna o número de segundos restantes até o token expirar.
+     * Retorna 0 se o token já estiver expirado ou inválido.
+     */
+    public long getRemainingValiditySeconds(String token) {
+        try {
+            Date expiry = parseClaims(token).getExpiration();
+            long remainingMs = expiry.getTime() - System.currentTimeMillis();
+            return Math.max(remainingMs / 1000, 0);
+        } catch (JwtException | IllegalArgumentException e) {
+            return 0;
+        }
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser().verifyWith(getKey()).build()
                 .parseSignedClaims(token).getPayload();

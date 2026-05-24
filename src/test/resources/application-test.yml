@@ -1,0 +1,18 @@
+spring:
+  mail:
+    host: localhost
+    port: 9999           # porta inválida — MailService captura falhas sem quebrar
+  jpa:
+    show-sql: false
+  flyway:
+    enabled: true        # Flyway roda as migrações no container Testcontainers
+    locations: classpath:db/migration
+
+app:
+  jwt:
+    secret: dGhpc2lzYXZlcnlsb25nc2VjcmV0a2V5Zm9yand0dG9rZW5z
+    expiration-ms: 900000
+    refresh-expiration-ms: 604800000
+  frontend-url: http://localhost:5173
+  mail:
+    from: noreply@test.app

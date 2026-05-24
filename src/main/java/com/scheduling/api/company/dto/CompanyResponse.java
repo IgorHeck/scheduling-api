@@ -13,7 +13,8 @@ public class CompanyResponse {
     private String description;
     private String address;
     private String phone;
-    private boolean allowCLientBooking;
+    private String logoUrl;
+    private boolean allowClientBooking;
     private boolean active;
     private LocalDateTime createdAt;
 

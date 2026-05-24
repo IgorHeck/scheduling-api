@@ -8,6 +8,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,30 +31,33 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
     private final UserRepository userRepository;
 
+    // ── Criação ──────────────────────────────────────────────────────────────
+
     @PostMapping
-    @Operation(summary = "Cria agendamento - CLIENT entra como PENDING, ADMIN/MANAGER como CONFIRMED")
+    @Operation(summary = "Cria agendamento — CLIENT → PENDING, ADMIN/MANAGER → CONFIRMED")
     public ResponseEntity<AppointmentResponse> create(
             @RequestBody @Valid CreateAppointmentRequest req,
             @AuthenticationPrincipal UserDetails principal) {
-        User currentUser = userRepository.findByEmail(principal.getUsername())
-                .orElseThrow();
+        User currentUser = resolveUser(principal);
         return ResponseEntity.ok(appointmentService.create(req, currentUser));
     }
 
     @PostMapping("/public")
-    @Operation(summary = "Solicitação pública de agendamento — sem autenticação")
+    @Operation(summary = "Solicitação pública — sem autenticação")
     public ResponseEntity<AppointmentResponse> createPublic(
             @RequestBody @Valid PublicAppointmentRequest req) {
         return ResponseEntity.ok(appointmentService.createPublic(req));
     }
 
+    // ── Consultas ────────────────────────────────────────────────────────────
+
     @GetMapping
-    @Operation(summary = "Lista agendamentos do usuário logado")
-    public ResponseEntity<List<AppointmentResponse>> myAppointments(
-            @AuthenticationPrincipal UserDetails principal) {
-        User currentUser = userRepository.findByEmail(principal.getUsername())
-                .orElseThrow();
-        return ResponseEntity.ok(appointmentService.findByCurrentUser(currentUser.getId()));
+    @Operation(summary = "Lista agendamentos do usuário logado (paginado)")
+    public ResponseEntity<Page<AppointmentResponse>> myAppointments(
+            @AuthenticationPrincipal UserDetails principal,
+            @PageableDefault(size = 10, sort = "startAt") Pageable pageable) {
+        User currentUser = resolveUser(principal);
+        return ResponseEntity.ok(appointmentService.findByCurrentUser(currentUser.getId(), pageable));
     }
 
     @GetMapping("/{id}")
@@ -60,51 +66,82 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.findById(id));
     }
 
+    @GetMapping("/company/{companyId}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(summary = "Agenda da empresa por período (paginado)")
+    public ResponseEntity<Page<AppointmentResponse>> byCompany(
+            @PathVariable Long companyId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @PageableDefault(size = 20, sort = "startAt") Pageable pageable,
+            @AuthenticationPrincipal UserDetails principal) {
+        User currentUser = resolveUser(principal);
+        return ResponseEntity.ok(appointmentService.findByCompany(companyId, start, end, pageable, currentUser));
+    }
+
+    @GetMapping("/company/{companyId}/pending")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(summary = "Fila de solicitações pendentes")
+    public ResponseEntity<List<AppointmentResponse>> pending(
+            @PathVariable Long companyId,
+            @AuthenticationPrincipal UserDetails principal) {
+        User currentUser = resolveUser(principal);
+        return ResponseEntity.ok(appointmentService.findPendingByCompany(companyId, currentUser));
+    }
+
+    @GetMapping("/calendar")
+    @Operation(summary = "Resumo do mês para o calendário")
+    public ResponseEntity<List<CalendarDayResponse>> calendar(
+            @RequestParam Long companyId,
+            @RequestParam String month) {
+        return ResponseEntity.ok(appointmentService.getCalendarMonth(companyId, YearMonth.parse(month)));
+    }
+
+    // ── Transições de status ─────────────────────────────────────────────────
+
     @PutMapping("/{id}/confirm")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @Operation(summary = "Confirma agendamento PENDING")
-    public ResponseEntity<AppointmentResponse> confirm(@PathVariable Long id) {
-        return ResponseEntity.ok(appointmentService.confirm(id));
+    public ResponseEntity<AppointmentResponse> confirm(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails principal) {
+        User currentUser = resolveUser(principal);
+        return ResponseEntity.ok(appointmentService.confirm(id, currentUser));
+    }
+
+    @PutMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    @Operation(summary = "Marca agendamento CONFIRMED como COMPLETED")
+    public ResponseEntity<AppointmentResponse> complete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails principal) {
+        User currentUser = resolveUser(principal);
+        return ResponseEntity.ok(appointmentService.complete(id, currentUser));
     }
 
     @PutMapping("/{id}/cancel")
     @Operation(summary = "Cancela agendamento")
     public ResponseEntity<AppointmentResponse> cancel(
             @PathVariable Long id,
-            @RequestParam(required = false) String reason) {
-        return ResponseEntity.ok(appointmentService.cancel(id, reason));
+            @RequestParam(required = false) String reason,
+            @AuthenticationPrincipal UserDetails principal) {
+        User currentUser = resolveUser(principal);
+        return ResponseEntity.ok(appointmentService.cancel(id, reason, currentUser));
     }
 
     @PutMapping("/{id}/reschedule")
     @Operation(summary = "Remarca para novo horário")
     public ResponseEntity<AppointmentResponse> reschedule(
             @PathVariable Long id,
-            @RequestBody @Valid RescheduleRequest req) {
-        return ResponseEntity.ok(appointmentService.reschedule(id, req));
+            @RequestBody @Valid RescheduleRequest req,
+            @AuthenticationPrincipal UserDetails principal) {
+        User currentUser = resolveUser(principal);
+        return ResponseEntity.ok(appointmentService.reschedule(id, req, currentUser));
     }
 
-    @GetMapping("/company/{companyId}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    @Operation(summary = "Agenda completo da empresa por período")
-    public ResponseEntity<List<AppointmentResponse>> byCompany(
-            @PathVariable Long companyId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        return ResponseEntity.ok(appointmentService.findByCompany(companyId, start, end));
-    }
+    // ── Helper ───────────────────────────────────────────────────────────────
 
-    @GetMapping("/company/{companyId}/pending")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    @Operation(summary = "Fila de solicitações pendentes")
-    public ResponseEntity<List<AppointmentResponse>> pending(@PathVariable Long companyId) {
-        return ResponseEntity.ok(appointmentService.findPendingByCompany(companyId));
-    }
-
-    @GetMapping("/calendar")
-    @Operation(summary = "Resumo do mês para pintar o calendário")
-    public ResponseEntity<List<CalendarDayResponse>> calendar(
-            @RequestParam Long companyId,
-            @RequestParam String month) {
-        return ResponseEntity.ok(appointmentService.getCalendarMonth(companyId, YearMonth.parse(month)));
+    private User resolveUser(UserDetails principal) {
+        return userRepository.findByEmail(principal.getUsername()).orElseThrow();
     }
 }

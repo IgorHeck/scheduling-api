@@ -9,6 +9,7 @@ import com.scheduling.api.scheduling.model.ScheduleBlock;
 import com.scheduling.api.scheduling.repository.ScheduleBlockRepository;
 import com.scheduling.api.scheduling.repository.ScheduleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -24,6 +25,7 @@ public class AvaliabilityService {
     private final ScheduleRepository scheduleRepository;
     private final AppointmentRepository appointmentRepository;
 
+    @Cacheable(value = "slots", key = "#companyId + ':' + #date")
     public List<AvailableSlotResponse> getAvailableSlots(Long companyId, LocalDate date) {
         List<Schedule> schedules = scheduleRepository
                 .findByCompanyIdAndActiveTrue(companyId).stream()

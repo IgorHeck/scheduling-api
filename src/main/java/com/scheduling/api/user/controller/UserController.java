@@ -1,5 +1,7 @@
 package com.scheduling.api.user.controller;
 
+import com.scheduling.api.user.dto.AssignCompanyRequest;
+import com.scheduling.api.user.dto.CreateManagerRequest;
 import com.scheduling.api.user.dto.UpdateUserRequest;
 import com.scheduling.api.user.dto.UserResponse;
 import com.scheduling.api.user.repository.UserRepository;
@@ -8,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,6 +47,13 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cria usuário com role MANAGER (somente ADMIN)")
+    public ResponseEntity<UserResponse> createManager(@RequestBody @Valid CreateManagerRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createManager(req));
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lista todos os usuários (somente ADMIN)")
@@ -55,6 +65,14 @@ public class UserController {
     @Operation(summary = "Busca usuário por ID")
     public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.findById(id));
+    }
+
+    @PutMapping("/{id}/company")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Vincula ou desvincula um usuário a uma empresa (somente ADMIN)")
+    public ResponseEntity<UserResponse> assignCompany(@PathVariable Long id,
+                                                      @RequestBody AssignCompanyRequest req) {
+        return ResponseEntity.ok(userService.assignCompany(id, req));
     }
 
     @DeleteMapping("/{id}")

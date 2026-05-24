@@ -1,6 +1,7 @@
 package com.scheduling.api.config;
 
 import com.scheduling.api.auth.filter.JwtAuthFilter;
+import com.scheduling.api.auth.service.TokenBlacklistService;
 import com.scheduling.api.auth.service.TokenService;
 import com.scheduling.api.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,35 +37,34 @@ public class SecurityConfig {
     private final UserRepository userRepository;
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService) {
-        return new JwtAuthFilter(tokenService, userDetailsService);
+    public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService,
+                                       TokenBlacklistService tokenBlacklistService) {
+        return new JwtAuthFilter(tokenService, tokenBlacklistService, userDetailsService);
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <- linha que faltava
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/v1/auth/**",
+                                "/api/v1/auth/**",          // inclui forgot-password e reset-password
                                 "/api/v1/appointments/public",
                                 "/api/v1/appointments/calendar",
                                 "/api/v1/schedules/available",
                                 "/api/v1/companies",
                                 "/api/v1/companies/**",
+                                "/uploads/logos/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(
-                        jwtAuthFilter(userDetailsService()),
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

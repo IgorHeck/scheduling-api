@@ -1,0 +1,11 @@
+com\scheduling\api\appointment\service\AppointmentServiceTest.class
+com\scheduling\api\auth\controller\AuthControllerTest.class
+com\scheduling\api\auth\service\PasswordResetServiceTest.class
+com\scheduling\api\appointment\controller\AppointmentControllerTest.class
+com\scheduling\api\integration\BaseIntegrationTest.class
+com\scheduling\api\integration\AuthFlowIT.class
+com\scheduling\api\integration\RateLimitIT.class
+com\scheduling\api\auth\filter\JwtAuthFilterTest.class
+com\scheduling\api\integration\AppointmentFlowIT.class
+com\scheduling\api\notification\NotificationServiceTest.class
+com\scheduling\api\notification\NotificationControllerTest.class
